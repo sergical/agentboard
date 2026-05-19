@@ -2,19 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { db } from "@/lib/db";
 import { tasks } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
-  const { taskId } = await params;
+  const { id, taskId } = await params;
   const body = await req.json();
 
   const [updated] = await db
     .update(tasks)
     .set({ ...body, updatedAt: new Date() })
-    .where(eq(tasks.id, taskId))
+    .where(and(eq(tasks.id, taskId), eq(tasks.projectId, id)))
     .returning();
 
   if (!updated) {
@@ -44,9 +44,11 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
-  const { taskId } = await params;
+  const { id, taskId } = await params;
 
-  await db.delete(tasks).where(eq(tasks.id, taskId));
+  await db
+    .delete(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.projectId, id)));
 
   Sentry.metrics.count("task.deleted", 1);
 
