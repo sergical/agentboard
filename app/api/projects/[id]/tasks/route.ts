@@ -8,6 +8,20 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: projectId } = await params;
+
+  if (
+    !projectId ||
+    typeof projectId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      projectId
+    )
+  ) {
+    return NextResponse.json(
+      { error: "Invalid projectId" },
+      { status: 400 }
+    );
+  }
+
   const body = await req.json();
 
   const [task] = await db
